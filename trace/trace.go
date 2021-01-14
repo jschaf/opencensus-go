@@ -110,17 +110,26 @@ type SpanContext struct {
 	Tracestate   *tracestate.Tracestate
 }
 
-type contextKey struct{}
+const (
+	SpanContextKey = "@open_census_context_key@"
+)
 
 // FromContext returns the Span stored in a context, or nil if there isn't one.
 func (t *tracer) FromContext(ctx context.Context) *Span {
-	s, _ := ctx.Value(contextKey{}).(*Span)
-	return s
+	val := ctx.Value(SpanContextKey)
+	switch val := val.(type) {
+	case *Span:
+		return val
+	case SpanInterface:
+		return &Span{internal: val}
+	default:
+		return nil
+	}
 }
 
 // NewContext returns a new context with the given Span attached.
 func (t *tracer) NewContext(parent context.Context, s *Span) context.Context {
-	return context.WithValue(parent, contextKey{}, s)
+	return context.WithValue(parent, SpanContextKey, s)
 }
 
 // All available span kinds. Span kind must be either one of these values.
